@@ -1,0 +1,1198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ability Arena Expanded Prototype</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101318;
+      --panel: #191e26;
+      --line: #303744;
+      --text: #f4f7fb;
+      --muted: #aab3c2;
+      --accent: #45d19f;
+      --blue: #57a8ff;
+      --amber: #ffca5f;
+      --red: #ff6578;
+      --violet: #b98cff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 16% 12%, rgba(69, 209, 159, 0.16), transparent 26rem),
+        radial-gradient(circle at 86% 62%, rgba(255, 202, 95, 0.11), transparent 31rem),
+        linear-gradient(135deg, #101318, #151923 48%, #12161c);
+      color: var(--text);
+    }
+
+    .screen {
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 22px;
+      overflow: auto;
+    }
+
+    .menu {
+      width: min(1180px, 100%);
+      display: grid;
+      gap: 16px;
+    }
+
+    .topline {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: end;
+    }
+
+    .title {
+      margin: 0;
+      font-size: clamp(40px, 6vw, 82px);
+      line-height: 0.92;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 780px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.42;
+    }
+
+    .section-title {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .modes,
+    .loadouts {
+      display: grid;
+      gap: 10px;
+    }
+
+    .modes { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .loadouts { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+    .card {
+      min-height: 122px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(25, 30, 38, 0.84);
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 120ms ease, transform 120ms ease, background 120ms ease;
+    }
+
+    .card:hover,
+    .card.selected {
+      border-color: var(--accent);
+      background: rgba(28, 42, 42, 0.94);
+      transform: translateY(-2px);
+    }
+
+    .card h2,
+    .card h3 {
+      margin: 0 0 7px;
+      font-size: 19px;
+    }
+
+    .card p,
+    .card ul {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.35;
+      font-size: 13px;
+    }
+
+    .card ul {
+      margin-top: 8px;
+      padding-left: 17px;
+    }
+
+    .player-picks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .pick-panel {
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      background: rgba(13, 17, 23, 0.48);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+
+    button.primary {
+      min-height: 46px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #07110d;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    #game {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: #12171d;
+      cursor: crosshair;
+    }
+
+    .hud {
+      position: fixed;
+      inset: 12px 12px auto 12px;
+      display: grid;
+      grid-template-columns: minmax(250px, 320px) 1fr minmax(250px, 320px);
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .panel {
+      padding: 11px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 8px;
+      background: rgba(13, 17, 23, 0.76);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+    }
+
+    .player-panel h2,
+    .center-panel h2 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 8px 0 5px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .bar {
+      height: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .fill {
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      transition: width 80ms linear;
+    }
+
+    .health { background: linear-gradient(90deg, var(--red), #ff9d8f); }
+    .meter { background: linear-gradient(90deg, var(--blue), var(--accent)); }
+
+    .ability-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .ability {
+      min-height: 48px;
+      padding: 7px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .ability.ready { border-color: rgba(69, 209, 159, 0.82); }
+
+    .key {
+      display: inline-grid;
+      place-items: center;
+      min-width: 23px;
+      height: 23px;
+      margin-right: 5px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.14);
+      color: white;
+      font-weight: 900;
+    }
+
+    .ability-name {
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .ability-cost {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .center-panel {
+      display: grid;
+      gap: 6px;
+      justify-items: center;
+      align-content: start;
+      text-align: center;
+    }
+
+    .mode-name {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .big-stat {
+      color: white;
+      font-size: 26px;
+      font-weight: 950;
+    }
+
+    .toast,
+    .pause-menu {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      display: none;
+      min-width: min(460px, calc(100vw - 32px));
+      padding: 20px;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background: rgba(13, 17, 23, 0.9);
+      text-align: center;
+      backdrop-filter: blur(12px);
+    }
+
+    .toast h2,
+    .pause-menu h2 {
+      margin: 0 0 8px;
+      font-size: 32px;
+    }
+
+    .toast p,
+    .pause-menu p {
+      margin: 0 0 14px;
+      color: var(--muted);
+    }
+
+    .pause-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    @media (max-width: 980px) {
+      body { overflow: auto; }
+      .topline,
+      .player-picks,
+      .modes,
+      .loadouts { grid-template-columns: 1fr; }
+      .hud {
+        grid-template-columns: 1fr;
+        inset: 8px;
+      }
+      .center-panel { justify-items: start; text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <main id="menu" class="screen">
+    <section class="menu">
+      <div class="topline">
+        <div>
+          <h1 class="title">Ability Arena</h1>
+          <p class="subtitle">Choose a mode, pick each player's ability style, then fight enemies, bots, bosses, or each other with meter-powered abilities.</p>
+        </div>
+        <button class="primary" id="start">Start Match</button>
+      </div>
+
+      <h2 class="section-title">Game Mode</h2>
+      <div class="modes" id="modes"></div>
+
+      <div class="player-picks">
+        <section class="pick-panel">
+          <h2 class="section-title">Player 1 Loadout</h2>
+          <div class="loadouts" id="p1Loadouts"></div>
+        </section>
+        <section class="pick-panel">
+          <h2 class="section-title">AI Teammate Loadout</h2>
+          <div class="loadouts" id="p2Loadouts"></div>
+        </section>
+      </div>
+
+      <div class="actions">
+        <span class="hint">P1: WASD move, mouse aim, click fire, 1-4 abilities. Your AI teammate fights on its own. Escape opens the pause menu.</span>
+      </div>
+    </section>
+  </main>
+
+  <section id="game">
+    <canvas id="canvas"></canvas>
+    <div class="hud">
+      <div class="panel player-panel" id="p1Panel"></div>
+      <div class="panel center-panel">
+        <h2 id="modeTitle">Survival</h2>
+        <div class="mode-name" id="modeStatus">Wave 1</div>
+        <div>Score <span class="big-stat" id="scoreText">0</span></div>
+        <div>Alive <span class="big-stat" id="aliveText">0</span></div>
+      </div>
+      <div class="panel player-panel" id="p2Panel"></div>
+    </div>
+
+    <div class="toast" id="toast">
+      <h2 id="toastTitle">Match Over</h2>
+      <p id="toastBody">Result text.</p>
+      <button class="primary" id="restart">Back to Menu</button>
+    </div>
+
+    <div class="pause-menu" id="pauseMenu">
+      <h2>Paused</h2>
+      <p>Take a breather, swap hands, then jump back in.</p>
+      <div class="pause-actions">
+        <button class="primary" id="resume">Resume</button>
+        <button class="primary" id="restartMatch">Restart Match</button>
+        <button class="primary" id="pauseBackToMenu">Back to Menu</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const modes = [
+      { id: "survival", name: "Survival", desc: "Solo waves. You fight endless enemies and boss waves.", ally: false, rival: false },
+      { id: "coop", name: "AI Co-op", desc: "You and an AI teammate share the arena against stronger enemy waves.", ally: true, rival: false },
+      { id: "duel", name: "AI Duel", desc: "No enemies. Win 3 rounds against an AI rival.", ally: false, rival: true },
+      { id: "br", name: "Squad Battle Royale", desc: "You and an AI teammate fight AI rivals while the arena shrinks.", ally: true, rival: false },
+      { id: "boss", name: "Boss Rush", desc: "You and an AI teammate fight one huge enemy, dangerous minions, and big meter gains.", ally: true, rival: false }
+    ];
+
+    const loadouts = [
+      {
+        id: "vanguard", name: "Vanguard", color: "#45d19f", blurb: "Durable control fighter.",
+        abilities: [
+          { name: "Shockwave", cost: 30, type: "shock" },
+          { name: "Barrier", cost: 45, type: "barrier" },
+          { name: "Overdrive", cost: 65, type: "overdrive" },
+          { name: "Heal Pulse", cost: 70, type: "heal" }
+        ]
+      },
+      {
+        id: "flare", name: "Flare", color: "#ffca5f", blurb: "Explosive area damage.",
+        abilities: [
+          { name: "Fireball", cost: 25, type: "fireball" },
+          { name: "Ember Dash", cost: 40, type: "dashfire" },
+          { name: "Meteor", cost: 80, type: "meteor" },
+          { name: "Flame Ring", cost: 55, type: "ring" }
+        ]
+      },
+      {
+        id: "volt", name: "Volt", color: "#57a8ff", blurb: "Fast chain attacks.",
+        abilities: [
+          { name: "Arc Bolt", cost: 25, type: "arc" },
+          { name: "Blink", cost: 35, type: "blink" },
+          { name: "Time Snare", cost: 60, type: "snare" },
+          { name: "Storm Shot", cost: 50, type: "storm" }
+        ]
+      },
+      {
+        id: "shade", name: "Shade", color: "#b98cff", blurb: "Stealth and precision.",
+        abilities: [
+          { name: "Pierce Shot", cost: 25, type: "pierce" },
+          { name: "Phase", cost: 45, type: "phase" },
+          { name: "Void Trap", cost: 55, type: "trap" },
+          { name: "Assassinate", cost: 80, type: "assassinate" }
+        ]
+      },
+      {
+        id: "terra", name: "Terra", color: "#9dc66b", blurb: "Heavy defense and crowd control.",
+        abilities: [
+          { name: "Boulder", cost: 30, type: "boulder" },
+          { name: "Root Field", cost: 45, type: "root" },
+          { name: "Stone Skin", cost: 55, type: "stoneskin" },
+          { name: "Quake", cost: 80, type: "quake" }
+        ]
+      }
+    ];
+
+    const modeWrap = document.getElementById("modes");
+    const p1Loadouts = document.getElementById("p1Loadouts");
+    const p2Loadouts = document.getElementById("p2Loadouts");
+    const menu = document.getElementById("menu");
+    const game = document.getElementById("game");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const p1Panel = document.getElementById("p1Panel");
+    const p2Panel = document.getElementById("p2Panel");
+    const modeTitle = document.getElementById("modeTitle");
+    const modeStatus = document.getElementById("modeStatus");
+    const scoreText = document.getElementById("scoreText");
+    const aliveText = document.getElementById("aliveText");
+    const toast = document.getElementById("toast");
+    const toastTitle = document.getElementById("toastTitle");
+    const toastBody = document.getElementById("toastBody");
+    const pauseMenu = document.getElementById("pauseMenu");
+
+    const keys = new Set();
+    const mouse = { x: 0, y: 0, down: false };
+    let selectedMode = modes[0];
+    let p1Pick = loadouts[0];
+    let teammatePick = loadouts[2];
+    let state;
+    let lastTime = 0;
+
+    function resize() {
+      canvas.width = Math.floor(window.innerWidth * devicePixelRatio);
+      canvas.height = Math.floor(window.innerHeight * devicePixelRatio);
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+
+    function renderMenu() {
+      modeWrap.innerHTML = "";
+      for (const mode of modes) {
+        const card = document.createElement("button");
+        card.className = `card ${mode.id === selectedMode.id ? "selected" : ""}`;
+        card.innerHTML = `<h2>${mode.name}</h2><p>${mode.desc}</p>`;
+        card.onclick = () => { selectedMode = mode; renderMenu(); };
+        modeWrap.appendChild(card);
+      }
+      renderLoadoutList(p1Loadouts, p1Pick, (loadout) => { p1Pick = loadout; renderMenu(); });
+      renderLoadoutList(p2Loadouts, teammatePick, (loadout) => { teammatePick = loadout; renderMenu(); });
+    }
+
+    function renderLoadoutList(parent, selected, pick) {
+      parent.innerHTML = "";
+      for (const loadout of loadouts) {
+        const card = document.createElement("button");
+        card.className = `card ${loadout.id === selected.id ? "selected" : ""}`;
+        card.innerHTML = `
+          <h3>${loadout.name}</h3>
+          <p>${loadout.blurb}</p>
+          <ul>${loadout.abilities.map(a => `<li>${a.name}</li>`).join("")}</ul>
+        `;
+        card.onclick = () => pick(loadout);
+        parent.appendChild(card);
+      }
+    }
+
+    function makePlayer(id, loadout, x, y, controls, isBot = false, team = "hero", role = "player") {
+      return {
+        kind: "player", id, loadout, controls, isBot, team, role,
+        x, y, vx: 0, vy: 0, r: isBot ? 15 : 17,
+        hp: isBot ? 82 : 110, maxHp: isBot ? 82 : 110,
+        meter: 25, maxMeter: 100, speed: isBot ? 190 : 250,
+        aimX: 1, aimY: 0, fireTimer: 0, inv: 1.2, barrier: 0, overdrive: 0,
+        phased: 0, snare: 0, slow: 0, wins: 0, alive: true, aiTimer: 0
+      };
+    }
+
+    function resetGame() {
+      resize();
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      state = {
+        running: true,
+        paused: false,
+        mode: selectedMode,
+        players: [],
+        enemies: [],
+        bullets: [],
+        hazards: [],
+        particles: [],
+        wave: 1,
+        score: 0,
+        shrink: Math.min(w, h) * 0.48,
+        shrinkTimer: 0,
+        nextRoundTimer: 0,
+        bossSpawned: false
+      };
+      state.players.push(makePlayer(1, p1Pick, w * 0.33, h * 0.5, "p1", false, "hero", "player"));
+      if (selectedMode.ally) state.players.push(makePlayer("AI", teammatePick, w * 0.67, h * 0.5, "bot", true, "hero", "teammate"));
+      if (selectedMode.rival) state.players.push(makePlayer("Rival", teammatePick, w * 0.72, h * 0.5, "bot", true, "rival", "rival"));
+      if (selectedMode.id === "survival" || selectedMode.id === "coop") spawnWave();
+      if (selectedMode.id === "br") spawnBots(5);
+      if (selectedMode.id === "boss") spawnBoss();
+      modeTitle.textContent = selectedMode.name;
+      toast.style.display = "none";
+      pauseMenu.style.display = "none";
+      renderPanels();
+    }
+
+    function spawnBots(count) {
+      for (let i = 0; i < count; i++) {
+        const loadout = loadouts[(i + 1) % loadouts.length];
+        state.players.push(makePlayer(`B${i + 1}`, loadout, rand(80, window.innerWidth - 80), rand(90, window.innerHeight - 80), "bot", true, "rival", "rival"));
+      }
+    }
+
+    function spawnWave() {
+      const count = 3 + Math.ceil(state.wave * (state.mode.id === "coop" ? 2.1 : 1.55));
+      for (let i = 0; i < count; i++) spawnEnemy(i % 4 === 0 && state.wave > 2);
+    }
+
+    function spawnBoss() {
+      state.bossSpawned = true;
+      state.enemies.push({
+        kind: "enemy", boss: true, x: window.innerWidth / 2, y: 110, r: 42,
+        hp: 720, maxHp: 720, speed: 70, damage: 18, color: "#ff6578", slow: 0, shootTimer: 1.3
+      });
+      for (let i = 0; i < 5; i++) spawnEnemy(false);
+    }
+
+    function spawnEnemy(brute = false) {
+      const margin = 80;
+      const side = Math.floor(Math.random() * 4);
+      const x = side === 0 ? -margin : side === 1 ? window.innerWidth + margin : rand(0, window.innerWidth);
+      const y = side === 2 ? -margin : side === 3 ? window.innerHeight + margin : rand(0, window.innerHeight);
+      state.enemies.push({
+        kind: "enemy", x, y, r: brute ? 22 : 15,
+        hp: brute ? 58 + state.wave * 8 : 30 + state.wave * 4,
+        maxHp: brute ? 58 + state.wave * 8 : 30 + state.wave * 4,
+        speed: brute ? 65 + state.wave * 2 : 92 + state.wave * 3,
+        damage: brute ? 13 : 7, color: brute ? "#ff6578" : "#c4d0df", slow: 0
+      });
+    }
+
+    function startGame() {
+      menu.style.display = "none";
+      game.style.display = "block";
+      resetGame();
+      lastTime = performance.now();
+      requestAnimationFrame(loop);
+    }
+
+    function endGame(title, body) {
+      state.running = false;
+      state.paused = false;
+      toastTitle.textContent = title;
+      toastBody.textContent = body;
+      toast.style.display = "block";
+      pauseMenu.style.display = "none";
+    }
+
+    function loop(now) {
+      const dt = Math.min(0.033, (now - lastTime) / 1000);
+      lastTime = now;
+      if (state?.running) {
+        if (!state.paused) update(dt);
+        draw();
+        requestAnimationFrame(loop);
+      }
+    }
+
+    function update(dt) {
+      for (const player of state.players) if (player.alive) updatePlayer(player, dt);
+      updateEnemies(dt);
+      updateBullets(dt);
+      updateHazards(dt);
+      updateParticles(dt);
+      updateRules(dt);
+      renderPanels();
+    }
+
+    function updatePlayer(p, dt) {
+      p.fireTimer -= dt;
+      p.inv = Math.max(0, p.inv - dt);
+      p.barrier = Math.max(0, p.barrier - dt);
+      p.overdrive = Math.max(0, p.overdrive - dt);
+      p.phased = Math.max(0, p.phased - dt);
+      p.snare = Math.max(0, p.snare - dt);
+      p.slow = Math.max(0, p.slow - dt);
+      p.meter = Math.min(p.maxMeter, p.meter + dt * 3.2);
+
+      if (p.isBot) updateBot(p, dt);
+      else updateHuman(p);
+
+      const slowFactor = p.slow > 0 ? 0.45 : 1;
+      p.x = clamp(p.x + p.vx * slowFactor * dt, p.r, window.innerWidth - p.r);
+      p.y = clamp(p.y + p.vy * slowFactor * dt, p.r, window.innerHeight - p.r);
+      if (state.mode.id === "br") applyStorm(p, dt);
+    }
+
+    function updateHuman(p) {
+      let mx = 0, my = 0;
+      if (p.controls === "p1") {
+        mx = (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0);
+        my = (keys.has("s") ? 1 : 0) - (keys.has("w") ? 1 : 0);
+        const ax = mouse.x - p.x;
+        const ay = mouse.y - p.y;
+        const len = Math.hypot(ax, ay) || 1;
+        p.aimX = ax / len;
+        p.aimY = ay / len;
+        if (mouse.down) tryShoot(p);
+      } else {
+        mx = (keys.has("arrowright") ? 1 : 0) - (keys.has("arrowleft") ? 1 : 0);
+        my = (keys.has("arrowdown") ? 1 : 0) - (keys.has("arrowup") ? 1 : 0);
+        const ax = (keys.has("l") ? 1 : 0) - (keys.has("j") ? 1 : 0);
+        const ay = (keys.has("k") ? 1 : 0) - (keys.has("i") ? 1 : 0);
+        if (ax || ay) {
+          const aimLen = Math.hypot(ax, ay);
+          p.aimX = ax / aimLen;
+          p.aimY = ay / aimLen;
+        }
+        if (keys.has("enter")) tryShoot(p);
+      }
+      const len = Math.hypot(mx, my) || 1;
+      p.vx = (mx / len) * p.speed;
+      p.vy = (my / len) * p.speed;
+    }
+
+    function updateBot(p, dt) {
+      const targets = livingPlayers().filter(other => other !== p);
+      const target = nearest(p, targets);
+      if (!target) return;
+      const dx = target.x - p.x;
+      const dy = target.y - p.y;
+      const d = Math.hypot(dx, dy) || 1;
+      p.aimX = dx / d; p.aimY = dy / d;
+      p.vx = (d > 230 ? p.aimX : -p.aimX * 0.55) * p.speed;
+      p.vy = (d > 230 ? p.aimY : -p.aimY * 0.55) * p.speed;
+      p.aiTimer -= dt;
+      if (d < 520) tryShoot(p);
+      if (p.aiTimer <= 0 && p.meter > 35) {
+        useAbility(p, Math.floor(Math.random() * 4));
+        p.aiTimer = rand(1.5, 3.2);
+      }
+    }
+
+    function tryShoot(p, opts = {}) {
+      if (p.fireTimer > 0) return;
+      shoot(p, opts);
+      p.fireTimer = p.overdrive > 0 ? 0.075 : 0.19;
+    }
+
+    function shoot(owner, opts = {}) {
+      state.bullets.push({
+        kind: "bullet", owner, x: owner.x + owner.aimX * 25, y: owner.y + owner.aimY * 25,
+        vx: owner.aimX * (opts.speed || 720), vy: owner.aimY * (opts.speed || 720),
+        r: opts.r || 5, life: opts.life || 1.15, damage: opts.damage || 15,
+        color: opts.color || owner.loadout.color, explosive: opts.explosive || false,
+        pierce: opts.pierce || false, hostileToPlayers: opts.hostileToPlayers ?? isPvPMode()
+      });
+    }
+
+    function useAbility(p, index) {
+      if (!p.alive) return;
+      const ability = p.loadout.abilities[index];
+      if (!ability || p.meter < ability.cost) {
+        burst(p.x, p.y, "#ffffff", 5, 1.8);
+        return;
+      }
+      p.meter -= ability.cost;
+      const t = ability.type;
+      if (t === "shock") areaDamage(p, 175, 34, true);
+      if (t === "barrier") { p.barrier = 5; p.inv = 0.35; burst(p.x, p.y, p.loadout.color, 24, 3); }
+      if (t === "overdrive") { p.overdrive = 5.5; burst(p.x, p.y, p.loadout.color, 32, 3); }
+      if (t === "heal") { p.hp = Math.min(p.maxHp, p.hp + 42); burst(p.x, p.y, p.loadout.color, 30, 2.6); }
+      if (t === "fireball") shoot(p, { explosive: true, damage: 44, speed: 560, r: 8, color: p.loadout.color });
+      if (t === "dashfire") { dash(p, 230); addHazard(p.x, p.y, 58, 2.2, 28, p, p.loadout.color); }
+      if (t === "meteor") addHazard(p.x + p.aimX * 250, p.y + p.aimY * 250, 120, 0.75, 210, p, p.loadout.color);
+      if (t === "ring") for (let i = 0; i < 8; i++) addHazard(p.x + Math.cos(i) * 76, p.y + Math.sin(i) * 76, 34, 2, 34, p, p.loadout.color);
+      if (t === "arc") chainDamage(p, 5, 38);
+      if (t === "blink") { dash(p, 270); p.inv = 0.35; }
+      if (t === "snare") { p.snare = 5; slowNear(p, 320, 5); burst(p.x, p.y, p.loadout.color, 44, 3); }
+      if (t === "storm") for (let i = -1; i <= 1; i++) shootSpread(p, i * 0.22, 26);
+      if (t === "pierce") shoot(p, { pierce: true, damage: 34, speed: 820, r: 6, life: 1.4, color: p.loadout.color });
+      if (t === "phase") { p.phased = 3.6; p.inv = 3.6; burst(p.x, p.y, p.loadout.color, 24, 2.8); }
+      if (t === "trap") addHazard(p.x + p.aimX * 150, p.y + p.aimY * 150, 88, 4, 25, p, p.loadout.color, true);
+      if (t === "assassinate") assassinate(p);
+      if (t === "boulder") shoot(p, { damage: 48, speed: 420, r: 14, explosive: true, color: p.loadout.color });
+      if (t === "root") { addHazard(p.x + p.aimX * 120, p.y + p.aimY * 120, 100, 4.2, 18, p, p.loadout.color, true); slowNear(p, 230, 4); }
+      if (t === "stoneskin") { p.barrier = 7; p.hp = Math.min(p.maxHp, p.hp + 18); burst(p.x, p.y, p.loadout.color, 26, 2.4); }
+      if (t === "quake") areaDamage(p, 260, 70, true);
+    }
+
+    function shootSpread(p, angleOffset, damage) {
+      const a = Math.atan2(p.aimY, p.aimX) + angleOffset;
+      state.bullets.push({
+        kind: "bullet", owner: p, x: p.x + Math.cos(a) * 25, y: p.y + Math.sin(a) * 25,
+        vx: Math.cos(a) * 690, vy: Math.sin(a) * 690, r: 5, life: 1,
+        damage, color: p.loadout.color, hostileToPlayers: isPvPMode()
+      });
+    }
+
+    function dash(p, distance) {
+      p.x = clamp(p.x + p.aimX * distance, p.r, window.innerWidth - p.r);
+      p.y = clamp(p.y + p.aimY * distance, p.r, window.innerHeight - p.r);
+      burst(p.x, p.y, p.loadout.color, 22, 3);
+    }
+
+    function areaDamage(p, range, damage, push) {
+      for (const target of damageTargets(p)) {
+        const d = dist(p, target);
+        if (d < range + target.r) {
+          applyDamage(target, damage, p);
+          if (push) {
+            const a = Math.atan2(target.y - p.y, target.x - p.x);
+            target.x += Math.cos(a) * 80;
+            target.y += Math.sin(a) * 80;
+          }
+        }
+      }
+      burst(p.x, p.y, p.loadout.color, 48, 3.5);
+    }
+
+    function chainDamage(p, count, damage) {
+      nearestList(p, damageTargets(p), 340).slice(0, count).forEach((target, i) => {
+        setTimeout(() => {
+          if (!state?.running || target.hp <= 0) return;
+          applyDamage(target, damage, p);
+          burst(target.x, target.y, p.loadout.color, 18, 3);
+        }, i * 65);
+      });
+    }
+
+    function assassinate(p) {
+      const target = nearest(p, damageTargets(p));
+      if (!target || dist(p, target) > 360) return;
+      p.x = clamp(target.x - p.aimX * 32, p.r, window.innerWidth - p.r);
+      p.y = clamp(target.y - p.aimY * 32, p.r, window.innerHeight - p.r);
+      applyDamage(target, 115, p);
+      p.inv = 0.6;
+      burst(target.x, target.y, p.loadout.color, 38, 4);
+    }
+
+    function slowNear(p, range, duration) {
+      for (const target of damageTargets(p)) if (dist(p, target) < range) target.slow = duration;
+    }
+
+    function addHazard(x, y, r, life, dps, owner, color, slow = false) {
+      state.hazards.push({ x, y, r, life, maxLife: life, dps, owner, color, slow });
+      burst(x, y, color, 30, 3);
+    }
+
+    function damageTargets(owner) {
+      const targets = [...state.enemies];
+      if (isPvPMode()) targets.push(...livingPlayers().filter(p => p !== owner));
+      return targets;
+    }
+
+    function updateEnemies(dt) {
+      for (const enemy of state.enemies) {
+        enemy.slow = Math.max(0, enemy.slow - dt);
+        const target = nearest(enemy, livingPlayers());
+        if (!target) continue;
+        const a = Math.atan2(target.y - enemy.y, target.x - enemy.x);
+        const speed = enemy.speed * (enemy.slow > 0 ? 0.42 : 1);
+        enemy.x += Math.cos(a) * speed * dt;
+        enemy.y += Math.sin(a) * speed * dt;
+        if (enemy.boss) {
+          enemy.shootTimer -= dt;
+          if (enemy.shootTimer <= 0) {
+            enemy.shootTimer = 1.2;
+            for (let i = 0; i < 8; i++) bossShot(enemy, (Math.PI * 2 / 8) * i);
+          }
+        }
+        if (dist(enemy, target) < enemy.r + target.r) applyDamage(target, enemy.damage, enemy);
+      }
+      state.enemies = state.enemies.filter(enemy => {
+        if (enemy.hp > 0) return true;
+        state.score += enemy.boss ? 1500 : 100;
+        reward(enemy.boss ? 38 : 13);
+        burst(enemy.x, enemy.y, enemy.color, enemy.boss ? 90 : 20, enemy.boss ? 5 : 3);
+        return false;
+      });
+    }
+
+    function bossShot(enemy, angle) {
+      state.bullets.push({
+        kind: "bullet", owner: enemy, x: enemy.x, y: enemy.y,
+        vx: Math.cos(angle) * 330, vy: Math.sin(angle) * 330,
+        r: 8, life: 2.4, damage: 13, color: "#ff6578", hostileToPlayers: true, enemyBullet: true
+      });
+    }
+
+    function updateBullets(dt) {
+      for (const bullet of state.bullets) {
+        bullet.x += bullet.vx * dt;
+        bullet.y += bullet.vy * dt;
+        bullet.life -= dt;
+        const targets = bullet.enemyBullet ? livingPlayers() : bullet.hostileToPlayers ? damageTargets(bullet.owner) : state.enemies;
+        for (const target of targets) {
+          if (bullet.life <= 0 || target.hp <= 0 || target === bullet.owner) continue;
+          if (dist(bullet, target) < bullet.r + target.r) {
+            applyDamage(target, bullet.damage, bullet.owner);
+            if (bullet.explosive) {
+              for (const splash of targets) if (dist(bullet, splash) < 90) applyDamage(splash, bullet.damage * 0.65, bullet.owner);
+              burst(bullet.x, bullet.y, bullet.color, 32, 4);
+            } else {
+              burst(target.x, target.y, bullet.color, 8, 2.6);
+            }
+            if (!bullet.pierce) bullet.life = 0;
+          }
+        }
+      }
+      state.bullets = state.bullets.filter(b => b.life > 0 && b.x > -100 && b.x < window.innerWidth + 100 && b.y > -100 && b.y < window.innerHeight + 100);
+    }
+
+    function updateHazards(dt) {
+      for (const hazard of state.hazards) {
+        hazard.life -= dt;
+        for (const target of damageTargets(hazard.owner)) {
+          if (dist(hazard, target) < hazard.r + target.r) {
+            applyDamage(target, hazard.dps * dt, hazard.owner);
+            if (hazard.slow) target.slow = 0.8;
+          }
+        }
+      }
+      state.hazards = state.hazards.filter(h => h.life > 0);
+    }
+
+    function updateParticles(dt) {
+      state.particles = state.particles.filter(part => {
+        part.x += part.vx * dt;
+        part.y += part.vy * dt;
+        part.life -= dt;
+        return part.life > 0;
+      });
+    }
+
+    function applyDamage(target, amount, source) {
+      if (target.kind === "player") {
+        if (!target.alive || target.inv > 0 || target.phased > 0) return;
+        amount *= target.barrier > 0 ? 0.35 : 1;
+        target.inv = 0.35;
+      }
+      target.hp -= amount;
+      if (source?.kind === "player") source.meter = Math.min(source.maxMeter, source.meter + amount * 0.09);
+      if (target.kind === "player" && target.hp <= 0) {
+        target.alive = false;
+        burst(target.x, target.y, target.loadout.color, 50, 4);
+      }
+    }
+
+    function reward(amount) {
+      for (const p of livingPlayers().filter(p => !p.isBot)) p.meter = Math.min(p.maxMeter, p.meter + amount);
+    }
+
+    function updateRules(dt) {
+      const humans = state.players.filter(p => !p.isBot);
+      const aliveHumans = humans.filter(p => p.alive);
+      if (state.mode.id === "survival" && aliveHumans.length === 0) endGame("Defeated", `You reached wave ${state.wave} with ${state.score} score.`);
+      if (state.mode.id === "coop" && aliveHumans.length === 0) endGame("Team Defeated", `Your team reached wave ${state.wave} with ${state.score} score.`);
+      if ((state.mode.id === "survival" || state.mode.id === "coop") && state.enemies.length === 0) {
+        state.nextRoundTimer += dt;
+        if (state.nextRoundTimer > 1.1) {
+          state.wave++;
+          state.nextRoundTimer = 0;
+          for (const p of aliveHumans) {
+            p.hp = Math.min(p.maxHp, p.hp + 16);
+            p.meter = Math.min(p.maxMeter, p.meter + 18);
+          }
+          spawnWave();
+        }
+      }
+      if (state.mode.id === "boss") {
+        if (aliveHumans.length === 0) endGame("Boss Victory", `The boss survived with ${state.score} score on the board.`);
+        if (state.bossSpawned && !state.enemies.some(e => e.boss)) endGame("Boss Defeated", `Your team won with ${state.score} score.`);
+        if (state.enemies.length < 3 && Math.random() < dt * 0.85) spawnEnemy(false);
+      }
+      if (state.mode.id === "duel") updateDuelRules();
+      if (state.mode.id === "br") updateBattleRoyale(dt);
+      modeStatus.textContent = state.mode.id === "duel" ? `Rounds ${humans.map(p => `P${p.id}: ${p.wins}`).join("  ")}` :
+        state.mode.id === "br" ? `Storm radius ${Math.round(state.shrink)}` : `Wave ${state.wave}`;
+      scoreText.textContent = state.score;
+      aliveText.textContent = livingPlayers().length;
+    }
+
+    function updateDuelRules() {
+      const humans = state.players.filter(p => !p.isBot);
+      if (humans.length < 2) return;
+      const alive = humans.filter(p => p.alive);
+      if (alive.length === 1 && state.nextRoundTimer <= 0) {
+        alive[0].wins++;
+        state.nextRoundTimer = 1.2;
+        if (alive[0].wins >= 3) endGame(`Player ${alive[0].id} Wins`, `Final rounds: P1 ${humans[0].wins} - P2 ${humans[1].wins}.`);
+        else setTimeout(resetRound, 1000);
+      }
+    }
+
+    function resetRound() {
+      if (!state?.running || state.mode.id !== "duel") return;
+      const wins = state.players.map(p => p.wins);
+      const picks = state.players.map(p => p.loadout);
+      state.players = [
+        makePlayer(1, picks[0], window.innerWidth * 0.28, window.innerHeight * 0.5, "p1"),
+        makePlayer(2, picks[1], window.innerWidth * 0.72, window.innerHeight * 0.5, "p2")
+      ];
+      state.players[0].wins = wins[0];
+      state.players[1].wins = wins[1];
+      state.bullets = [];
+      state.hazards = [];
+      state.nextRoundTimer = 0;
+    }
+
+    function updateBattleRoyale(dt) {
+      state.shrinkTimer += dt;
+      if (state.shrinkTimer > 1) {
+        state.shrinkTimer = 0;
+        state.shrink = Math.max(150, state.shrink - 6);
+      }
+      const alive = livingPlayers();
+      if (alive.length === 1) {
+        const winner = alive[0].isBot ? "AI Rival" : `Player ${alive[0].id}`;
+        endGame(`${winner} Wins`, `Battle royale finished with ${state.score} score.`);
+      }
+    }
+
+    function applyStorm(p, dt) {
+      const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+      if (dist(p, center) > state.shrink) applyDamage(p, 12 * dt, { kind: "storm" });
+    }
+
+    function isPvPMode() {
+      return state.mode.id === "duel" || state.mode.id === "br";
+    }
+
+    function livingPlayers() {
+      return state.players.filter(p => p.alive);
+    }
+
+    function renderPanels() {
+      p1Panel.innerHTML = playerPanel(state.players.find(p => p.id === 1), ["1", "2", "3", "4"]);
+      const p2 = state.players.find(p => p.id === 2);
+      p2Panel.innerHTML = p2 ? playerPanel(p2, ["U", "O", "P", "L"]) : `<h2>Player 2</h2><p class="hint">Not active in this mode.</p>`;
+      markReady(p1Panel, state.players.find(p => p.id === 1));
+      if (p2) markReady(p2Panel, p2);
+    }
+
+    function playerPanel(p, keyList) {
+      if (!p) return "";
+      const hp = Math.max(0, p.hp);
+      return `
+        <h2>Player ${p.id} - ${p.loadout.name}</h2>
+        <div class="bar-label"><span>Health</span><span>${Math.ceil(hp)} / ${p.maxHp}</span></div>
+        <div class="bar"><div class="fill health" style="width:${hp / p.maxHp * 100}%"></div></div>
+        <div class="bar-label"><span>Ability Meter</span><span>${Math.floor(p.meter)} / ${p.maxMeter}</span></div>
+        <div class="bar"><div class="fill meter" style="width:${p.meter / p.maxMeter * 100}%"></div></div>
+        <div class="ability-grid">
+          ${p.loadout.abilities.map((a, i) => `
+            <div class="ability" data-cost="${a.cost}">
+              <div><span class="key">${keyList[i]}</span><span class="ability-name">${a.name}</span></div>
+              <div class="ability-cost">${a.cost} meter</div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function markReady(panel, p) {
+      if (!p) return;
+      [...panel.querySelectorAll(".ability")].forEach((item, i) => {
+        item.classList.toggle("ready", p.meter >= p.loadout.abilities[i].cost);
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      drawArena();
+      if (state.mode.id === "br") drawStorm();
+      for (const h of state.hazards) drawHazard(h);
+      for (const b of state.bullets) drawCircle(b.x, b.y, b.r, b.color);
+      for (const e of state.enemies) drawEnemy(e);
+      for (const p of state.players) drawPlayer(p);
+      for (const part of state.particles) drawParticle(part);
+    }
+
+    function drawArena() {
+      ctx.fillStyle = "#12171d";
+      ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+      ctx.strokeStyle = "rgba(255,255,255,0.055)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < window.innerWidth; x += 48) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, window.innerHeight); ctx.stroke();
+      }
+      for (let y = 0; y < window.innerHeight; y += 48) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(window.innerWidth, y); ctx.stroke();
+      }
+    }
+
+    function drawStorm() {
+      const x = window.innerWidth / 2;
+      const y = window.innerHeight / 2;
+      ctx.fillStyle = "rgba(185, 140, 255, 0.18)";
+      ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(x, y, state.shrink, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = "rgba(185, 140, 255, 0.8)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(x, y, state.shrink, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function drawHazard(h) {
+      ctx.globalAlpha = Math.max(0.16, h.life / h.maxLife * 0.42);
+      drawCircle(h.x, h.y, h.r, h.color);
+      ctx.globalAlpha = 1;
+    }
+
+    function drawEnemy(e) {
+      drawCircle(e.x, e.y, e.r, e.slow > 0 ? "#9fd0ff" : e.color);
+      drawBar(e.x, e.y - e.r - 12, e.r * 2, e.hp / e.maxHp, "#ff6578");
+    }
+
+    function drawPlayer(p) {
+      if (!p.alive) return;
+      if (p.barrier > 0) {
+        ctx.strokeStyle = "rgba(69,209,159,0.72)";
+        ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 10, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (p.phased > 0) ctx.globalAlpha = 0.48;
+      else if (p.inv > 0 && Math.floor(p.inv * 12) % 2 === 0) ctx.globalAlpha = 0.62;
+      drawCircle(p.x, p.y, p.r, p.isBot ? "#d7dce5" : p.loadout.color);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = p.loadout.color;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x + p.aimX * 30, p.y + p.aimY * 30);
+      ctx.stroke();
+      drawBar(p.x, p.y - p.r - 13, p.r * 2.2, p.hp / p.maxHp, p.loadout.color);
+    }
+
+    function drawParticle(part) {
+      ctx.globalAlpha = Math.max(0, part.life / part.maxLife);
+      drawCircle(part.x, part.y, part.r, part.color);
+      ctx.globalAlpha = 1;
+    }
+
+    function drawCircle(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawBar(x, y, width, ratio, color) {
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(x - width / 2, y, width, 4);
+      ctx.fillStyle = color;
+      ctx.fillRect(x - width / 2, y, width * clamp(ratio, 0, 1), 4);
+    }
+
+    function burst(x, y, color, count, speed) {
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const s = rand(35, 95) * speed;
+        state.particles.push({
+          x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+          r: rand(2, 5), life: rand(0.25, 0.8), maxLife: 0.8, color
+        });
+      }
+    }
+
+    function nearest(from, list) {
+      return nearestList(from, list, Infinity)[0];
+    }
+
+    function nearestList(from, list, range) {
+      return [...list]
+        .map(item => ({ item, d: dist(from, item) }))
+        .filter(row => row.d <= range)
+        .sort((a, b) => a.d - b.d)
+        .map(row => row.item);
+    }
+
+    function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+    function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+    function rand(min, max) { return min + Math.random() * (max - min); }
+
+    function setPaused(paused) {
+      if (!state?.running) return;
+      state.paused = paused;
+      pauseMenu.style.display = paused ? "block" : "none";
+    }
+
+    function restartCurrentMatch() {
+      if (!state) return;
+      resetGame();
+      lastTime = performance.now();
+    }
+
+    function backToMenu() {
+      if (state) state.running = false;
+      pauseMenu.style.display = "none";
+      toast.style.display = "none";
+      game.style.display = "none";
+      menu.style.display = "grid";
+    }
+
+    window.addEventListener("resize", resize);
+    window.addEventListener("keydown", (event) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", " "].includes(event.key)) event.preventDefault();
+      if (event.key === "Escape" && state?.running) {
+        setPaused(!state.paused);
+        return;
+      }
+      keys.add(event.key.toLowerCase());
+      if (!state?.running && event.key.toLowerCase() === "r") {
+        backToMenu();
+        return;
+      }
+      if (state?.paused) return;
+      const p1 = state?.players.find(p => p.id === 1);
+      const p2 = state?.players.find(p => p.id === 2);
+      if (["1", "2", "3", "4"].includes(event.key) && p1) useAbility(p1, Number(event.key) - 1);
+      const p2Keys = { u: 0, o: 1, p: 2, l: 3 };
+      if (event.key.toLowerCase() in p2Keys && p2) useAbility(p2, p2Keys[event.key.toLowerCase()]);
+    });
+    window.addEventListener("keyup", (event) => keys.delete(event.key.toLowerCase()));
+    canvas.addEventListener("mousemove", (event) => { mouse.x = event.clientX; mouse.y = event.clientY; });
+    canvas.addEventListener("mousedown", () => mouse.down = true);
+    window.addEventListener("mouseup", () => mouse.down = false);
+    document.getElementById("start").addEventListener("click", startGame);
+    document.getElementById("restart").addEventListener("click", () => {
+      backToMenu();
+    });
+    document.getElementById("resume").addEventListener("click", () => setPaused(false));
+    document.getElementById("restartMatch").addEventListener("click", restartCurrentMatch);
+    document.getElementById("pauseBackToMenu").addEventListener("click", backToMenu);
+
+    renderMenu();
+    resize();
+  </script>
+</body>
+</html>
