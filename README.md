@@ -1,1 +1,1 @@
-fighting,powers, difficulty
+
